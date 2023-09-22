@@ -1,0 +1,17 @@
+***********************Cryptography Key creation***********************************
+
+openssl genrsa -des3 -out private.key 4096
+openssl rsa -in private.key -pubout -out public.key
+ls
+touch bye
+vim bye 
+openssl rsautl -encrypt -pubin -inkey public.key -in bye -out encrypted.txt
+openssl rsautl -decrypt -inkey private.key -in encrypted.txt -out plaintext.txt
+
+******************************Certificate ******************************************
+openssl genrsa -des3 -out ca.key 4096
+openssl req -new -x509 -days 365 -key ca.key -out edureka.crt
+********************************Nmap************
+nmap -F "Domain name"
+nmap -p 20-25 "Domain name".........(Port scan)
+nmap --traceroute "DOmain name"

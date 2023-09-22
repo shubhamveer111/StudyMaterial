@@ -1,0 +1,5 @@
+Maven is a build tool to compile your source code.
+
+mvn clean compile
+mvn clean package 
+mvn spring-boot:run

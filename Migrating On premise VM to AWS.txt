@@ -1,0 +1,89 @@
+* Ref Link 
+
+---> https://www.youtube.com/watch?v=buzusNljpy4
+
+---> https://github.com/miztiik/server-migration-onprem-to-aws
+
+(Before That create one user and create Access and secret access key to configure aws our local machine using AWS cli.)
+
+
+1. Create File "trust-policy.json"
+
+{
+   "Version": "2012-10-17",
+   "Statement": [
+      {
+         "Effect": "Allow",
+         "Principal": { "Service": "vmie.amazonaws.com" },
+         "Action": "sts:AssumeRole",
+         "Condition": {
+            "StringEquals":{
+               "sts:Externalid": "vmimport"
+            }
+         }
+      }
+   ]
+}
+
+2. Then Use this command to create role on AWS.
+
+# aws iam create-role --role-name vmimport --assume-role-policy-document "file://C:\Users\ID0\Downloads\trust-policy.json"
+
+3. Create Policy file for this role "role-policy.json".
+
+{
+   "Version":"2012-10-17",
+   "Statement":[
+      {
+         "Effect":"Allow",
+         "Action":[
+            "s3:GetBucketLocation",
+            "s3:GetObject",
+            "s3:ListBucket" 
+         ],
+         "Resource":[
+            "arn:aws:s3:::nbackup",    .................(Very first create s3 bucket on cloud then we will use here)
+            "arn:aws:s3:::nbackup/*"
+         ]
+      },
+      {
+         "Effect":"Allow",
+         "Action":[
+            "ec2:ModifySnapshotAttribute",
+            "ec2:CopySnapshot",
+            "ec2:RegisterImage",
+            "ec2:Describe*"
+         ],
+         "Resource":"*"
+      }
+   ]
+}
+
+
+4.  Use below command to assign policy to role.
+
+
+# aws iam put-role-policy --role-name vmimport --policy-name vmimport --policy-document "file://C:\Users\ID0\Downloads\role-policy.json"
+
+5. Upload our OVA file to s3 bucket.
+ # aws s3 cp "D:\VM\Test.ova" s3://nbackup/
+
+6. Import VM using OVA file which you uploaded into s3 bucket. create file "containers.json"
+[
+  {
+    "Description": "Ubuntu",
+    "Format": "ova",
+    "UserBucket": {
+        "S3Bucket": "nbackup",
+        "S3Key": "Test.ova"
+    }
+}]
+
+
+7.  Use Blew command to create AMI 
+
+#  aws ec2 import-image --description "Ubuntu" --disk-containers "file://C:\Users\ID0\Downloads\containers.json"
+
+8. Monitor creation of VM using below command
+
+#  aws ec2 describe-import-image-tasks --import-task-ids "import-ami-051f16078a2185f06"

@@ -1,0 +1,15 @@
+1. Create l lambda function and detect unused volume and delete it weekly done this process 
+2. How we communicate three diff VPC to each other 
+
+3. creating load balancer under auto scalling grp using terraform 
+4 . Witch help of lamda how we can assign role based policy to other account lambda 
+5. what is umask value of root user ->  022
+6. how we check open port in linux 
+7. Usecase in init container in kubernetics
+8. how to setup RDS database in AWS
+9. How to automate three tier structure using terrform 
+10. what is terrform import 
+11. how to check user belong to which group.
+12. what is diff bet load balancer and round robin 
+13. what is target group and listner in load balancer 
+14. create shell script abc value is 1,2,3 and add 10 the sum will be 13

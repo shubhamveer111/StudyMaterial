@@ -1,0 +1,17 @@
+FOR /L %A IN (10,1,20) DO netsh interface ipv4 add address “Local Area Connection” 192.168.1.%A 255.255.255.0  ---> Multiple Ip Add cmd
+
+FOR /L %A IN (10,1,20) DO netsh interface ipv4 add address “Local Area Connection” 192.168.1.%A 255.255.255.0   --->Multiple delete
+
+netsh interface ipv4 delete address "Ethernet" addr=192.168.1.14   -----> single delete
+
+McAfee Remove CMD
+
+dpkg --list | grep mca
+sudo dpkg --purge mcafeetp
+sudo dpkg --purge mcafeeespfileaccess
+sudo dpkg --purge mcafeeespaac
+sudo dpkg --purge mcafeeesp
+sudo dpkg --purge mcafeert
+sudo dpkg --purge mfedx
+sudo dpkg --purge mfecma
+

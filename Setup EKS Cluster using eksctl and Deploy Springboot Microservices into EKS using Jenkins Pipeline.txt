@@ -1,0 +1,11 @@
+Ref Link
+---->   https://www.youtube.com/watch?v=C1BlN66s9yo
+
+Soure Code Repo
+---->  https://github.com/akannan1087/springboot-app
+
+Creating Jenking Server Installing and Docker Configure
+--->  https://www.coachdevops.com/2022/01/deploy-springboot-microservices-app_11.html
+
+Installing AWS Cli, Kubectl, 
+--->  https://www.coachdevops.com/2022/02/create-amazon-eks-cluster-by-eksctl-how.html

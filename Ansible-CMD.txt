@@ -1,0 +1,68 @@
+
+**************************** Ansible Installation *********************
+wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+yum install epel-release-latest-7.noarch.rpm -y
+yum update -y
+yum install git python python-devel python-pip openssl ansible -y
+which ansible
+ansible --version
+ansible-playbook "Playbook.yml".......................(To run play book)
+
+useradd 
+passwd ............................(Create user on all node)
+visudo ......................(Assign previlagde to created user )
+vi /etc/ssh/sshd_config.................(Passwordauthentoction make yes)
+
+vi /etc/ansible/hosts....................(add all host/node in hosts file)
+
+login with created user and create ssh-keygen............(create ssh key)
+ssh-copy-id "IP address"....................(copy ssh key and paste on node machine)
+ansibel all -m ping "IP".....(check node and server connectivity) 
+ansible all -m command -a "ls".................(Using this cmd all changese push to node) 
+ansible "Grp name"[] -a "touch file2"...........(using this we can automate thing in node machine)
+ansible "Grp name" -m copy -a "src=newfile dest=/tmp/" -b...........(Copy paste file to no of node) 
+ansible "Grp name" -m service -a "nmae=httpd states=started" -b
+
+******************************* Create YAML File*******************************************
+vi create.yml
+  ---
+- name: My First Playbook
+  hosts: all
+  become: yes
+  tasks:
+  - name: creating a user rohit
+     user: name=rohit................................(To create user )
+  - name: create file
+     file:
+      path: /home/ansadmin/demofile............................( to create file )
+      state: touch 
+  - name: installing pkg..........................(pkg install)
+     yum:
+       name: httpd
+       state: latest
+
+  - name: service start..............................(start service)
+     service:
+        name: httpd
+        state: started
+  - name: install pkg
+      apt:
+        name: default-jdk
+        state: present
+      when: ansible_os_family= "Debian"......................(using condition)
+
+  - name: download using url
+      get_url:
+         url: "pkg url"
+
+  - name: extra   .................................(extract taz.gz file and save location) 
+       unarchive:
+          src: /tmp
+          dest: /usr
+          remote_src: yes
+       
+    
+  
+
+
+...............(to run playbook)	

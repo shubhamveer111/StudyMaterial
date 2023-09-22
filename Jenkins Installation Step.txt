@@ -1,0 +1,553 @@
+********************Jenkins Installtion on Ubuntu Step **************************
+
+$ apt update
+$ apt install openjdk-11-jre-headless
+$ apt install default-jre
+$ vim /etc/environment
+	JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64".....(Add this line end of environment file)
+$ source /etc/environment
+$ echo $JAVA_HOME
+$ wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key |sudo gpg --dearmor -o /usr/share/keyrings/jenkins.gpg
+$ sudo sh -c 'echo deb [signed-by=/usr/share/keyrings/jenkins.gpg] http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+$ sudo apt update
+$ sudo apt install jenkins
+$ systemctl start jenkins.service
+$ ufw allow 8080
+$ ufw allow OpenSSH
+$ ufw enable
+
+
+
+************************Agent Node Add on job***************************
+
+echo 9dd663e9be4fde7ce4d4ed2ec357aac597cd4e08f416d45d14cf9d709bb3f2b2 > secret-file
+curl -sO http://172.20.10.147:8080/jnlpJars/agent.jar
+java -jar agent.jar -jnlpUrl http://172.20.10.147:8080/computer/TestProject/jenkins-agent.jnlp -secret ebf9a6546f0f5ace81c4e3aba438914b1c4b3c9467a7cd43708d741f0d86f264 -workDir "E:\TestProject"
+
+
+
+xcopy /s /x /y .\ViconDrivers\*.* D:\Release-Build\
+
+*************************************run job using SSH****************************************
+NAME=Shubham
+echo "Hello, $NAME, Current date and time is $(date)" > /tmp/info
+
+
+
+***************************************************Docker YAML File ******************************************************
+
+FROM centos
+
+RUN cd /etc/yum.repos.d/
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
+
+RUN yum -y install openssh-server
+
+RUN useradd remote_user && \
+    echo "remote_user:1234" | chpasswd  && \
+    mkdir /home/remote_user/.ssh && \
+    chmod 700 /home/remote_user/.ssh
+
+
+COPY remote-key.pub /home/remote_user/.ssh/authorized_keys
+
+RUN chown remote_user:remote_user -R  /home/remote_user/.ssh/ && \
+    chmod 600 /home/remote_user/.ssh/authorized_keys
+
+RUN /usr/bin/ssh-keygen -A
+EXPOSE 22
+RUN rm -rf /run/nologin
+
+RUN yum -y install mysql
+
+RUN dnf install -y python3-pip && \
+    pip3 --version && \
+    pip3 install awscli --upgrade
+
+CMD /usr/sbin/sshd -D
+
+
+*******************************************Docker-compose File*********************************************************
+version: '3'
+services:
+  jenkins:
+    container_name: jenkins
+    image: jenkins/docker
+    build:
+      context: pipeline
+    ports:
+      - "8080:8080"
+      - "5000:5000"
+    volumes:
+      - "$PWD/jenkins_home:/var/jenkins_home"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - net
+  remote_host:
+    container_name: remote-host
+    image: remote-host
+    build:
+      context: centos7
+    networks:
+      - net
+  db_host:
+    container_name: db
+    image: mysql:5.7
+    environment:
+      - "MYSQL_ROOT_PASSWORD=1234"
+    volumes:
+     - "$PWD/db_data:/var/lib/mysql"
+    networks:
+      - net
+  git:
+    container_name: git-server
+    image: 'gitlab/gitlab-ce:latest'
+    hostname: 'gitlab.example.com'
+    ports:
+      - '8090:80'
+    volumes:
+      - '/srv/gitlab/config:/etc/gitlab'
+      - '/srv/gitlab/logs:/var/log/gitlab'
+      - '/srv/gitlab/data:/var/opt/gitlab'
+    networks:
+      - net
+networks:
+  net:
+
+*********************************************Mysql db container***********************************
+
+1.create database in mysql 
+  # create database testdb
+  # use testdb 
+  # create table info (name varchar(20), lastname varchar(20), age int(2));
+  # insert into info values ('Shubham', 'Veer', 25);
+
+2. create AWS s3 bucket / create user assign full acees to user .......................(copy s3 access key and secert key  )
+3. go to container where we install aws cli and pip
+   
+   mysqldump --column-statistics=0 -u root -h db_host -p testdb > /tmp/db.sql................(copy data and paste db file)
+   export AWS_ACCESS_KEY_ID=AKIASDEFVBW3Y5KNQQUJ
+   export AWS_SECRET_ACCESS_KEY=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.........................(export both s3 keys into our container)
+   aws configure list..............................................................(check key and env)
+   aws s3 cp /tmp/db.sql s3://jenkinsmysqlbuck/db.sql ...............................(copy all databse and insert into s3 bucket)
+
+********************************************Create db script and store data on s3 using jenkins job ****************************
+
+#/bin/bash
+DATE=$(date +%H-%M-%S)
+
+DB_HOST=$1
+DB_PASSWORD=$2
+DB_NAME=$3
+AWS_SECRET=$4
+BUCKET_NAME=$5
+
+
+mysqldump --column-statistics=0 -u root -h $DB_HOST  -p$DB_PASSWORD $DB_NAME > /tmp/db-$DATE.sql && \
+export AWS_ACCESS_KEY_ID=AKIASDEFVBW3Y5KNQQUJ
+export AWS_SECRET_ACCESS_KEY=$AWS_SECRET && \.......................(use s3 keys)
+echo "Uploading your db backup" && \
+aws s3 cp /tmp/db-$DATE.sql s3://$BUCKET_NAME/db-$DATE.sql
+
+*************************************************Ansible Inventory ****************
+- hosts: test1
+  tasks:
+    - shell: echo hello world from ansible  > /tmp/ansible-file
+
+****************************************** Using bash script show data ********************************
+
+1. create database "people" / create table "register"
+2 .create an txt file insert same record which we insert using script to database
+3. create script "put.sh"tr
+
+
+#!/bin/bash
+
+counter=0
+
+while [ $counter -lt 5 ]; do
+  let counter=counter+1
+
+  name=$(nl people.txt | grep -w $counter | awk '{print $2}' | awk -F ',' '{print $1}')
+  lastname=$(nl people.txt | grep -w $counter | awk '{print $2}' | awk -F ',' '{print $2}')
+  age=$(shuf -i 2-4 -n 1)
+
+  mysql -u root -p1234 people -e "insert into register values ($counter, '$name','$lastname','$age')"
+  echo "$counter, $name, $lastname, $age was cirectly imported"
+done
+
+
+********************************************Jenkins Security***************************
+1 . Install role based authentication plugin in jenkins.
+2 . In global seciruty tab allow role based authentication
+3. then go manage and assign role 
+      create role with diff permission and then assign permission to user.
+
+*****************************************build job using extrenal source (script)***************
+
+1. install strict Crumb Issuer then go to manage jenkins - global security - and strict advance and uncheck check session id.
+2. then in linux machine:
+      # curl 192.168.1.125:8080
+      # crumb=$(curl -u "shubham:1234" -s 'http://192.168.1.125:8080/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)')
+3 . create crumb.sh ....................(script file)
+    #!/bin/bash
+
+crumb=$(curl -u "shubham:1234" -s 'http://192.168.1.125:8080/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)')
+
+curl -u "shubham:1234" -H "$crumb" -X POST http://192.168.1.125:8080/job/ENV/build?delay=0sec.....................(URL is diff for particular job )
+
+*****************using parameters*******************************************	
+
+curl -u "shubham:1234" -H "$crumb" -X POST http://192.168.1.125:8080/job/backup-to-aws/buildwithParameters?MYSQL_HOST=db_host&DATABASE_NAME=testdb&AWS_BUCKET_NAME= jenkinsmysqlbuck.....................(URL is diff for particular job )
+
+
+*********************************Configure Gitlab server************************************
+1. Create docker yaml file 
+  git:
+    container_name: git-server
+    image: 'gitlab/gitlab-ce:latest'
+    hostname: 'gitlab.example.com'
+    ports:
+      - '8090:80'
+    volumes:
+      - '/srv/gitlab/config:/etc/gitlab'
+      - '/srv/gitlab/logs:/var/log/gitlab'
+      - '/srv/gitlab/data:/var/opt/gitlab'
+
+*********************************DSL Plugin (create New job using job script)***********
+
+1 . install dsl plugin
+2. create job and in build section use "The provided DSL script"
+	job('job_dsl_example') {
+
+    description('This is my awesome Job')
+
+      }
+  	job('job_dsl_created') {
+
+    description('This is my awesome Job')
+
+       }
+
+3. Pass Parameters fOR job
+
+	job('job_dsl_created') {
+
+    description('This is my awesome Job')
+
+    parameters {
+        stringParam('Planet', defaultValue = 'world', description = 'This is the world')
+        booleanParam('FLAG', true)
+        choiceParam('OPTION', ['option 1 (default)', 'option 2', 'option 3'])
+    }
+}
+
+4. For Sorce Code mgmt
+
+	job('job_dsl_created') {
+
+    description('This is my awesome Job')
+
+    parameters {
+        stringParam('Planet', defaultValue = 'world', description = 'This is the world')
+        booleanParam('FLAG', true)
+        choiceParam('OPTION', ['option 1 (default)', 'option 2', 'option 3'])
+    }
+
+    scm {
+        git('https://github.com/jenkins-docs/simple-java-maven-app', 'master')
+    }
+}
+
+5 For Trigger job
+
+	job('job_dsl_created') {
+
+    description('This is my awesome Job')
+
+    parameters {
+        stringParam('Planet', defaultValue = 'world', description = 'This is the world')
+        booleanParam('FLAG', true)
+        choiceParam('OPTION', ['option 1 (default)', 'option 2', 'option 3'])
+    }
+
+    scm {
+        git('https://github.com/jenkins-docs/simple-java-maven-app', 'master')
+    }
+    triggers {
+        cron('* * * * *')
+    }
+}
+
+
+
+6.  Maven Project 
+
+
+
+job('maven_dsl') {
+
+    description('Maven dsl project')
+
+    scm {
+        git('https://github.com/jenkins-docs/simple-java-maven-app', 'master', {node -> node / 'extensions' << '' })
+    }
+
+    steps {
+       maven {
+          mavenInstallation('jenkins-maven')
+          goals('-B -DskipTests clean package')
+       }
+       maven {
+          mavenInstallation('jenkins-maven')
+          goals('test')
+       }
+       shell('''
+          echo ************************Running The JAR*****************
+          java -jar /var/jenkins_home/workspace/maven/target/my-app-1.0-SNAPSHOT.jar
+       ''')
+     }
+       publishers {
+        archiveArtifacts('target/*.jar')
+        archiveJunit('**/target/surefire-reports/*.xml')
+       }
+
+}
+
+  
+********************************Pipeline Job *****************************
+
+1. INstall pipeline plugin 
+2. Create one pipeline job using script 
+   
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                sh 'echo "My first pipeline"'
+                sh '''
+                    echo "By the way, I can do more stuff in here"
+                    ls -lah
+                '''
+            }
+        }
+    }
+}
+
+************************************Install docker inside another docker container********************************
+FROM jenkins/jenkins
+
+USER root
+#Install ansible
+
+RUN apt-get update && apt-get install python3-pip -y && \
+    pip3 install ansible --upgrade &&\
+    apt-get upgrade -y && apt-get update
+
+RUN pip install -U ansible
+
+
+
+#Install Docker
+RUN apt-get update && \
+apt-get -y install apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    software-properties-common && \
+
+curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+
+   echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+
+
+
+RUN apt-get update && \
+apt-get -y install docker.io
+
+
+# Compose
+
+RUN curl -L "https://github.com/docker/compose/releases/download/1.22.0/docker-compose-$(uname -m)" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
+
+
+
+RUN usermod -aG docker jenkins
+
+USER jenkins
+
+******************************************************** Create a Jar for your Maven App using Docker********************************
+docker run --rm  -v $PWD/java-app:/app  -v /root/.m2/:/root/.m2/ -w /app maven:3-alpine mvn -B -Denforcer.skip=true -DskipTests clean package
+
+
+********************************************************Write a bash script to automate the Jar creation********************************
+create script file "mvn.sh" 
+ 		 docker run --rm  -v $PWD/java-app:/app  -v /root/.m2/:/root/.m2/ -w /app maven:3-alpine mvn -B -Denforcer.skip=true -DskipTests clean package
+
+
+*****************************************************Create a Dockerfile and build an image with your Jar************************************
+1 create docker file "Dockerfile"
+	FROM openjdk:8-jre-alpine
+
+	RUN mkdir /app
+
+	COPY *.jar /app/app.jar
+
+	CMD java -jar /app/app.jar
+
+2. docker build -f Dockerfile -t test .   ...................(create images)
+3. docker run --rm -ti test sh ..................(Run the image)
+
+****************************************************Create a Docker Compose file to automate the Image build process8**********************
+
+Create yml file: 
+version: '3'
+services:
+  app:
+    image: "app:$BUILD_TAG"
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+
+run : 
+docker-compose -f docker-compose-build.yml build...............(To build new images)]
+
+********************************a bash script to automate the Docker Image creation process*****************************
+Create bash file
+
+#!/bin/bash
+cp -f java-app/target/*.jar jenkins/build/
+
+echo "*************"
+echo "** Building Docker images******"
+echo "*******************"
+
+cd jenkins/build/ && docker-compose -f docker-compose-build.yml build --no-cache
+
+************************** how to Push/Pull Docker images to your Repository*******************************************************
+1. Create account on dockerhub and create repos on it.
+2. login dockerhub acc on terminal
+	docker login .................................(dockerhub login and pass)
+3. push docker images to repos.
+	i. assign tag and rename to our exiting images using below cmd.
+		docker tag app:2 shubhamveer111/maven-project:2............(app is my exiting images)
+		docker push shubhamveer111/maven-project:2
+		docker pull shubhamveer111/maven-project:2
+
+******************************create bash script for push and pull images*******************
+create script file: 
+
+#!/bin/bash
+
+echo "*************"
+echo "*****pushing images***********"
+echo "************"
+
+
+IMAGE="maven-project"
+
+
+echo"*********Logging in***********"
+docker login -u shubhamveer111 -p $PASS
+echo "**Tagging images****"
+docker tag $IMAGE:$BUILD_TAG shubhamveer111/$IMAGE:$BUILD_TAG
+echo "**********Pushing Images"
+
+docker push shubhamveer111/$IMAGE:$BUILD_TAG
+*************************************************************
+export PASS=Shubham@123
+export BUILD_TAG=7
+and then run teh script
+
+***************************Transfer some variables to the remote machine**************
+
+Create script file
+
+#!/bin/bash
+
+echo maven-project > /tmp/.auth
+echo $BUILD_TAG >> /tmp/.auth
+
+echo $PASS >> /tmp/.auth
+
+
+copy folder to remote machine
+ scp -i prod /tmp/.auth prod-user@192.168.1.131:/tmp/.auth
+ scp -i /opt/prod ./jenkins/deploy/publish root@192.168.1.131:/tmp/publish
+
+***************************Transfer the deployment script to the remote machine**************
+create script name publish
+
+#!/bin/bash
+export IMAGE=$(sed -n '1p' /tmp/.auth)
+export TAG=$( sed -n '2p' /tmp/.auth)
+export PASS=$(sed -n '3p' /tmp/.auth)
+
+docker login -u shubhamveer111 -p $PASS
+
+cd ~/maven && docker-compose up -d
+
+*********************************************************
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                sh '''
+                    ./jenkins/build/mvn.sh mvn -B -Denforcer.skip=true -DskipTests clean package
+                    ./jenkins/build/build.sh
+
+                    '''
+            }
+        }
+        stage('Test') {
+            steps {
+                     ./jenkins/test/mvn.sh mvn -Denforcer.skip=true test
+
+            }
+        }
+        stage('Push') {
+            steps {
+                       sh  './jenkins/push/push.sh'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                        sh './jenkins/deploy/deploy.sh'
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

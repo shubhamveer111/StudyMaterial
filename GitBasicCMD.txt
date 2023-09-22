@@ -1,0 +1,97 @@
+
+
+
+
+git status
+git init
+git config --global user.name shubham
+git config --global user.email "shubhamveer111@gmail.com"
+
+git config --global credential.helper store ..................(Provide github password in git so no need to add all time)
+	
+git add --a....(staging area)
+git commit -m "Initial commit"......(commit)
+git log....(To check who does changese done)
+rm -rf .git (remove git repos)
+git clone "Repos Path".....(cloning(Git repos HTTP path))
+touch .gitignore ....(create file)
+git diff....(CMD compare working dir with stagging dir)	
+git commit -a -m .....(Direct commit track file without adding stagging area )
+git mv file.txt file_1.txt ......(rename file name)
+git log -p......(Which and what line changes has been done)
+git log --stat....(short msg)
+git log --pretty=oneline/short/full.....(log in one line)
+git log --since-2.days/month.....(last 2 days log)
+git commit --amend.....(change exiting msg commit )
+git restore --staged "file name "......(Unstaging any file)
+git checkout -- "file name "..........(Restore any deleted file content)
+git config --global alias.st status......(Set alias e.g instead of status is st)
+git remote add origin git@github.com:shubhamveer111/SafetyFirst.git........(Adding this git repos origin to local folder)
+ssh-keygen -t rsa -b 4096 -C "shubhamveer111@gmail.com"........(Generate SSH key for Auth)
+cat /c/Users/CEMTREX/.ssh/id_rsa.pub........(Key Path to copy and paste in git repos)
+git push origin master............(Push all our Project or folder in git repos)
+git reset "File name ".................(bring back to unstagging area but wshen it commited we can't come back)
+git revert "Commit ID"..........(if i commiited now i want to revert so this command revert and delete file as well.)
+git clean -f .......................(Removing all untracked file)
+git tag -a "XZY" -m "msg" "privious commit id"
+git stash  ..........................(remove all untracked file or unadd file )
+
+
+
+....................Branching........................................
+git checkout -b develop.........(Create brach)
+git checkout master .........(Move to master branch)
+git branch ........(Check all branch)
+git merge "Created branch name"...........(Merging branch with master branch)
+git remote add origin https://github.com/shubhamveer111/GitTuto.git........(Adding this git repos origin to local folder)
+git remote -u origin "Branch name "....................(Adding branch in github repos).
+
+git push -d origin "branch name "........................(github branch deleting cmd)
+git fetch origin "Branch name" ......................(fetch github created branch on local )
+
+
+All time you neeed to push the code to branch who is the branch of master and the we nned to Create Push Request (PR) and then Approved and merge PR to master branch.
+Code Propogation :   Its always Lower to Higher (e.g   Dev--> Prepod --> Prod--->Master)
+
+
+
+***************************************************Jayant Lab*****************************************
+
+prequest :  git , maven , java and github account with creating repos in github 
+
+
+Create project using spring.io
+open in intelliji software  open project in soft and then compile and create package project using maven         (mvn clean package)
+then add github repo using in git ---> remote---> and then add github repos http link.
+then push code to repos master branch , after that create new branch on github account (Dev)
+and then fetch branch on local using.       									(git fetch origin dev)
+then switch to dev branch using             									(git checkout dev)
+then create new local branch under fetched dev branch using  							(git checkout -b feature/new)
+then after the chnages done add+commit code in local branch 
+then push this local branch directly in github using				 				(git push origin feature/new )
+then you see Pull request is appear in github, merge code in dev branch using (sqaush/mearge ) then after succefully add safaly delete local branch from github account.
+finally check changes merge on dev branch or not .
+
+
+then delete temperarly branch from local which we created in dev branch using 					(git branch -d feature/new) 
+
+
+
+
+ git remote rm origin
+  513  git remote add origin https://gitlab.com/shubhamveer111/ansible.git
+  514  git status
+  515  git push -u origin
+  516  git add .
+  517  git commit -m "Initial commit"
+  518  git push -u origin main
+  519  git push -u origin master
+
+
+
+
+
+
+
+
+	

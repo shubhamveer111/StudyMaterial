@@ -1,0 +1,158 @@
+
+Namespace (docker Assign name to container ) / Cgroup (control group..assign CPU/RAM to conatiner) / iptables
+
+
+Yum install update -y
+Yum install docker -y   or curl -fsSL https://get.docker.com/ | sh   
+service docker start 
+service docker status
+docker run -i -t ubuntu /bin/bash............(Pull and create container using docker hub IMG )
+docker pull "IMG Name"...............(Only pull IMG form dockerhub)
+docker rename "docker id".............(Rename container name)
+docker run -it --name "Name" "IMG" /bin/bash .............(Create container and rename same time )
+docker start "docker id"
+docker attach "docker id"
+docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)...............(Stopping and removing all container)
+docker commit "container_id" imag_name ...........(To create new imgaes for current container) 
+
+
+*****************************Creating own continer IMG using dockerfile**************************
+
+
+vi Dockerfile...............(Create file and add Instruction/script)
+	FROM ubuntu
+	RUN echo "HI....." > /tmp/test
+
+docker build -t TestIMG "path of Dockerfile" ............................(create own IMG)
+docker run -it --name test TestIMG /bin/bash...............................(create container using own IMG)
+docker ps ...................(Show runnnig container)
+docker ps -a ................(Show all Container)
+docker images.................(Show all images)
+
+docker tag ""IMG name" "New IMG name "
+docker push "Created IMG name"
+docker login .......................(login with your dockerhub login )
+docker inspect "Container name "..................(To see the details of container e.g name,ip.)
+docker stats "Container name ".................(Check how much ram use )
+
+
+******************************Jenkins Installation using Docker************************************
+
+docker run -i -t jenkins/jenkins /bin/bash............(create jenkins container)
+docker run -p 8080:8080  jenkins/jenkins.................(start jenkins and copy pass for access)
+
+
+******************************Jenkins Installation using Docker-compose************************************
+
+sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-composesudo chmod +x /usr/local/bin/docker-compose
+docker-compose version       .......................................(we can not directly install docker-compose so we need to add plugin manually)
+vi docker-compose.yml        ................................(create YML file)
+	version: '3'
+	services:
+ 	 jenkins:
+    	image: jenkins/jenkins:lts
+    	restart: always
+    	privileged: true
+    	user: root
+    	ports:
+     	 - 8080:8080
+     	 - 5000:5000
+    	container_name: jenkins
+    	volumes:
+     	 - "$pwd/jenkins_home:/var/jenkins_home
+docker-compose up -d    ........................(start docker-compose)
+systemctl restart docker.........................(restart service)
+docker run -p 8080:8080  jenkins/jenkins..........(start jenkins and copy pass for access)
+docker run -td --name webcont -p 80:80 ubuntu....(-d used for dettached your container continously runing)
+docker-compose restart jenkins.................(to restart jenkins container) 
+docker exec -ti jenkins bash..................(to go container bash shell)
+
+***************************************************Docker YAML File ******************************************************
+
+FROM centos
+
+RUN cd /etc/yum.repos.d/
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
+
+RUN yum -y install openssh-server
+
+RUN useradd remote_user && \
+    echo "remote_user:1234" | chpasswd  && \
+    mkdir /home/remote_user/.ssh && \
+    chmod 700 /home/remote_user/.ssh
+
+
+COPY remote-key.pub /home/remote_user/.ssh/authorized_keys
+
+RUN chown remote_user:remote_user -R  /home/remote_user/.ssh/ && \
+    chmod 600 /home/remote_user/.ssh/authorized_keys
+
+RUN /usr/bin/ssh-keygen -A
+EXPOSE 22
+RUN rm -rf /run/nologin
+
+RUN yum -y install mysql
+
+RUN dnf install -y python3-pip && \
+    pip3 --version && \
+    pip3 install awscli --upgrade
+
+CMD /usr/sbin/sshd -D
+
+
+*******************************************Docker-compose File*********************************************************
+version: '3'
+services:
+  jenkins:
+    container_name: jenkins
+    image: jenkins/docker
+    build:
+      context: pipeline
+    ports:
+      - "8080:8080"
+      - "5000:5000"
+    volumes:
+      - "$PWD/jenkins_home:/var/jenkins_home"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - net
+  remote_host:
+    container_name: remote-host
+    image: remote-host
+    build:
+      context: centos7
+    networks:
+      - net
+  db_host:
+    container_name: db
+    image: mysql:5.7
+    environment:
+      - "MYSQL_ROOT_PASSWORD=1234"
+    volumes:
+     - "$PWD/db_data:/var/lib/mysql"
+    networks:
+      - net
+  git:
+    container_name: git-server
+    image: 'gitlab/gitlab-ce:latest'
+    hostname: 'gitlab.example.com'
+    ports:
+      - '8090:80'
+    volumes:
+      - '/srv/gitlab/config:/etc/gitlab'
+      - '/srv/gitlab/logs:/var/log/gitlab'
+      - '/srv/gitlab/data:/var/opt/gitlab'
+    networks:
+      - net
+networks:
+  net:
+
+
+
+
+
+
+
+

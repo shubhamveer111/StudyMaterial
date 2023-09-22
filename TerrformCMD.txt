@@ -1,0 +1,19 @@
+* In terrform there is 8 to 10 blocks.
+1. Provider 2. Resource 3. Data
+
+*  We can use "variable.tf" file if we want to assign variable instend of value.
+*  If we want to check what we done in teraaform we can use "Output.tf" file so it will dispaly what we want.
+*  If we want multiple resouce work on same terrform file so that terraform.tfstate file may conflict there so for that we can use "Backend.tf"
+   file where we can add tfstate file into s3 bucket.
+
+* If we want to use exiting resorce which we have alredy created in AWS like "AWS Key" for that we can use "Data" block.
+ 
+
+
+terraform -version
+terraform init..............(Check wht provider it is and install plugin corresponding that provider plugin e.g AWS,Azure,GCP,Alibaba) 
+terraform plan..............(check cloud provider and read resource bloack and call aws api eng aws_instance
+terraform apply -auto-approve...........(To apply terraform and do the task on cloud )
+terraform destory
+terraform state-list
+

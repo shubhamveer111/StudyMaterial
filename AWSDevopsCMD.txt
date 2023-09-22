@@ -1,0 +1,271 @@
+AWS devops 
+1) CodeCommit-  FirstRepo,clone,add,push,branches,pull
+		Securing Repo and Branches.	
+		Triggers and Notifications and AWS Lambda
+2) CodeBuild- Build,Environment Variable, Parameter Store
+		Artifacts...(Storing build file into s3 bucket ), s3bucket
+		Cloudwatch...(Go to cloudwatch create new role and schedule time and add target arn for the build log
+3) CodeDeploy- Deploy app automatically many ec2 instance using AWS CodeDeploy...(like Ansible,puppet,chef)
+		# Installing the CodeDeploy agent on EC2
+```
+sudo yum update -y
+sudo yum install -y ruby wget
+wget https://aws-codedeploy-eu-west-1.s3.eu-west-1.amazonaws.com/latest/install
+chmod +x ./install
+sudo ./install auto
+sudo service codedeploy-agent status
+
+```
+
+
+# create a bucket and enable versioning
+aws configure --profile aws-devops  .................(Enter user access id and key)
+aws s3 mb s3://aws-devops-course-shubhz --region us-east-1 --profile aws-devops
+aws s3api put-bucket-versioning --bucket aws-devops-course-shubhz --versioning-configuration Status=Enabled --region us-east-1 --profile aws-devops
+```
+
+# deploy the files into S3
+```
+aws deploy push --application-name codedeploy --s3-location s3://aws-devops-course-shubhz/codedeploy-demo/app.zip --ignore-hidden-files --region us-east-1 --profile aws-devops
+
+ ``` 
+
+4) Code Pipeline
+   *Create Pipeline for CodeCommit or Repository whenever changes has been done our pipeline automatically work.
+   *Add stages in our pipeline for testing : 
+			For Testing we need to assign iam role with All resource access to s3 in codebuild. (https://us-east-1.console.aws.amazon.com/iam/home#/policies/arn:aws:iam::144161705399:policy/service-role/CodeBuildBasePolicy-MyWebCodeBuild-us-east-1/v2$edit?step=edit)
+   *Add Lambda service to testwebpages for that create lambda function assignt o role to lambda and then add lambda to our pipeline.   (https://docs.aws.amazon.com/codepipeline/latest/userguide/actions-invoke-lambda-function.html)
+
+5) Codestar   
+
+**********************************Install Jenkins Into Ec2***********
+
+sudo yum update -y
+sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key
+sudo yum install java-1.8.0 -y
+sudo amazon-linux-extras install epel
+sudo yum install jenkins -y
+sudo service jenkins start
+
+sudo cat
+/var/lib/jenkins/secrets/initialAdminPassword
+
+**********************************************************************
+ 
+AWS CloudFormation
+     *Create EC2 instance using YAML script file 
+       Resources:
+	  MyInstance:
+	    Type: AWS::EC2::Instance
+	    Properties:
+	      AvailabilityZone: us-east-1a
+	      ImageId: ami-009d6802948d06e52
+	      InstanceType: t2.micro
+ 
+******************************************************************************
+
+*   !Ref function use to refre paramter anywhere in YAML file.
+ e.g 
+Parameters:
+  SecurityGroupDescription:
+    Description: Security Group Description
+    Type: String
+
+Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: us-east-1a
+      ImageId: ami-009d6802948d06e52
+      InstanceType: t2.micro
+      SecurityGroups:
+        - !Ref SSHSecurityGroup
+        - !Ref ServerSecurityGroup
+
+  # an elastic IP for our instance
+  MyEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref MyInstance
+
+  # our EC2 security group
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: 22
+        IpProtocol: tcp
+        ToPort: 22
+
+  # our second EC2 security group
+  ServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Ref SecurityGroupDescription
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 192.168.1.1/32
+
+* Resources :
+* Mapping 
+!FindInMap [ MapName , TopLevelKey ]............(To return a named value from a specific key) 
+ 
+* Conditions : are used to control of resources or outputs based on condition.
+
+********************Create Instance Using cloud formation YAML file***********
+
+---
+Parameters:
+  SSHKey:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+
+Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: us-east-1a
+      ImageId: ami-06878d265978313ca
+      InstanceType: t2.micro
+      KeyName: !Ref SSHKey
+      SecurityGroups:
+        - !Ref SSHSecurityGroup
+      # we install our web server with user data
+      UserData: 
+        Fn::Base64: |
+          #!/bin/bash -xe
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          echo "Hello World from user data" > /var/www/html/index.html
+
+  # our EC2 security group
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSH and HTTP
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: 22
+        IpProtocol: tcp
+        ToPort: 22
+      - CidrIp: 0.0.0.0/0
+        FromPort: 80
+        IpProtocol: tcp
+        ToPort: 80   
+*******************************************************************************
+
+How to Use SSM paramters in Cloudformation.
+
+1) Go to SSM manager in AWS create paramater store in SSM 
+ i)  EC2/Instancetype - t2.micro
+ ii) EC2/AMI_ID- ami-0b5eea76982371e91
+2) Go to Cloudformation and create stack using below template 
+     Parameters:
+  InstanceType:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: /EC2/InstanceType
+
+  ImageId: 
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: /EC2/AMI_ID
+
+Resources:
+  # this instance will be automatically updated 
+  # when we change the parameter in SSM ourselves
+  # and then run the CloudFormation template
+  MyInstanceWithParameters:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+
+3)  Check EC2 instance create or not.
+
+******************************************************************************
+Create Security Grp using cloudformation and checking using drift like created grp has mader changes or not.
+Parameters:
+  VPCId:
+    Description: VPC to create the security group into
+    Type: AWS::EC2::VPC::Id
+  
+Resources:
+  SSHSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: Test Drift SSH Security Group
+      SecurityGroupIngress:
+        - CidrIp: "10.0.0.0/25"
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+      VpcId: !Ref VPCId
+
+  HTTPSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: Test Drift HTTP Security Group
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+      VpcId: !Ref VPCId
+
+--After creating made changes on secuirty grp and check on stack dirft status on clud formation.
+
+********************************* Lambda  ***********************************************
+
+ Create Function on lambda write code and test the code and check desire output.
+ Create Version for particular code e.g fro new release create new version.
+ Create Aliases for latest version and also create aliases for version and can test aliases as well.
+
+***************************How to create Serverless Application Model ********************
+
+1)  Install SAM cli tool for win/linux/mac and install python and also docker 
+    Check using (sam --version /python --version )
+2)  sam init --runtime python3.7   ................(Create Project template )
+    Create project using above cmd and then go to that folder 
+    cd sam-app
+    sam build .........................(build particular project )
+# Step 3 - Test the function
+```
+sam local invoke "HelloWorldFunction" -e events/event.json
+sam local start-api
+curl http://127.0.0.1:3000/hello 
+```
+
+# Step 4 - Package your application
+```
+sam package --output-template-file packaged.yaml --s3-bucket aws-devops-course-stephane --region eu-west-1 --profile aws-devops
+```
+
+# Step 5 - Deploy your application
+```
+sam deploy --template-file packaged.yaml --capabilities CAPABILITY_IAM --stack-name aws-sam-getting-started --region eu-west-1 --profile aws-devops
+```
+****************************************Amazon API Gateway**************************************
+
+Create any API using API gateway
+
+1) create new API using lambda stack and check where API is work or not 
+	 create new REST API :- select regional and then next 
+				create lambda function and add in API
+				then create method and select ACTION as a get and test the function and check output.
+
+ 
+
+
+
+
+                 
