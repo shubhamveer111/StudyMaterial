@@ -45,6 +45,8 @@ git branch ........(Check all branch)
 git merge "Created branch name"...........(Merging branch with master branch)
 git remote add origin https://github.com/shubhamveer111/GitTuto.git........(Adding this git repos origin to local folder)
 git remote -u origin "Branch name "....................(Adding branch in github repos).
+git branch -M main..............................(Rename Master branch to Main branch along with repo data)
+
 
 git push -d origin "branch name "........................(github branch deleting cmd)
 git fetch origin "Branch name" ......................(fetch github created branch on local )
